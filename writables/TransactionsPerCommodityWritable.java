@@ -8,12 +8,12 @@ import java.io.IOException;
 
 public class TransactionsPerCommodityWritable implements Writable {
     private String commodity;
-    private int    quantidade;
+    private float    quantidade;
 
 
     public TransactionsPerCommodityWritable(){}
 
-    public TransactionsPerCommodityWritable(String commodity, int quantidade) {
+    public TransactionsPerCommodityWritable(String commodity, float quantidade) {
         this.commodity = commodity;
         this.quantidade = quantidade;
     }
@@ -22,7 +22,7 @@ public class TransactionsPerCommodityWritable implements Writable {
         this.commodity = commodity;
     }
 
-    public void setQuantidade(int quantidade) {
+    public void setQuantidade(float quantidade) {
         this.quantidade = quantidade;
     }
 
@@ -37,7 +37,7 @@ public class TransactionsPerCommodityWritable implements Writable {
         return this.commodity;
     }
 
-    public int getQuantidade(){
+    public float getQuantidade(){
         return this.quantidade;
     }
 
@@ -46,8 +46,8 @@ public class TransactionsPerCommodityWritable implements Writable {
     //reduce lê como do map? como o arquivo lê do reduce?
     @Override
     public void readFields(DataInput in) throws IOException {
-        this.commodity = in.readUTF();
-        this.quantidade     = Integer.parseInt(in.readUTF());
+        this.commodity      = in.readUTF();
+        this.quantidade     = Float.parseFloat(in.readUTF());
     }
 
 

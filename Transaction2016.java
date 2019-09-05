@@ -1,5 +1,6 @@
 package advanced.transacoes;
 
+import advanced.transacoes.writables.TransactionsPerCommodityWritable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.FloatWritable;
@@ -14,6 +15,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.zookeeper.Transaction;
+
 
 import java.io.IOException;
 
@@ -55,7 +57,7 @@ public class Transaction2016 {
          *
          * */
         j.setOutputKeyClass(Text.class);
-        j.setOutputValueClass(LongWritable.class);
+        j.setOutputValueClass(TransactionsPerCommodityWritable.class);
 
 
 
@@ -80,7 +82,7 @@ public class Transaction2016 {
      *       se for arquivo de texto LongWritable e Text nunca mudam
      *
      * */
-    public static class MapForTransactionNumber extends Mapper<LongWritable, Text, Text, LongWritable> {
+    public static class MapForTransactionNumber extends Mapper<LongWritable, Text, Text, TransactionsPerCommodityWritable> {
 
         // Funcao de map
         /*
@@ -98,7 +100,7 @@ public class Transaction2016 {
             String[] palavras = linha.split(";");
             if(!palavras[8].equals("quantity") && !palavras[8].equals("") && palavras[1].equals("2016")) {
                 if (palavras[0].equals("Brazil")){
-                    con.write(new Text("1"), new LongWritable(Long.parseLong(palavras[8])));
+                    con.write(new Text("1"), new TransactionsPerCommodityWritable(palavras[3], Float.parseFloat(palavras[8])));
                 }
             }
         }
@@ -116,44 +118,47 @@ public class Transaction2016 {
      *
      * */
 
-    public static class CombineForTransactionNumber extends Reducer<Text, LongWritable, Text, LongWritable >{
+    public static class CombineForTransactionNumber extends Reducer<Text, TransactionsPerCommodityWritable, Text, TransactionsPerCommodityWritable >{
 
         // Funcao de reduce
-        public void reduce(Text commodity, Iterable<LongWritable> values, Context con)
+        public void reduce(Text commodity, Iterable<TransactionsPerCommodityWritable> values, Context con)
                 throws IOException, InterruptedException {
-            long quantity = 0;
-
+            float quantity = 0;
+            TransactionsPerCommodityWritable maior = null;
             //para cada item da lista de valores é feita uma soma
-            for(LongWritable v : values){
-                if(quantity < v.get()){
-                    quantity = v.get();
+            for(TransactionsPerCommodityWritable v : values){
+                if(quantity < v.getQuantidade()){
+                    quantity = v.getQuantidade();
+                    maior = v;
                 }
             }
 
 
             //apresentar o resultado final através de emissao para um arquivo
 
-            con.write(commodity, new LongWritable(quantity));
+            con.write(commodity, maior);
         }
     }
 
-    public static class ReduceForTransactionNumber extends Reducer<Text, LongWritable, Text, LongWritable >{
+    public static class ReduceForTransactionNumber extends Reducer<Text, TransactionsPerCommodityWritable, Text, Text >{
 
         // Funcao de reduce
-        public void reduce(Text commodity, Iterable<LongWritable> values, Context con)
+        public void reduce(Text commodity, Iterable<TransactionsPerCommodityWritable> values, Context con)
                 throws IOException, InterruptedException {
-            long quantity = 0;
+            float quantity = 0;
+            String texto = "";
             //para cada item da lista de valores é feita uma soma
-            for(LongWritable v : values){
-                if(quantity < v.get()){
-                    quantity = v.get();
+            for(TransactionsPerCommodityWritable v : values){
+                if(quantity < v.getQuantidade()){
+                    quantity = v.getQuantidade();
+                    texto    = v.getCommodity();
                 }
             }
 
 
 
             //apresentar o resultado final através de emissao para um arquivo
-            con.write(commodity, new LongWritable(quantity));
+            con.write(new Text(texto), new Text(String.valueOf(quantity)));
         }
     }
 
