@@ -98,7 +98,7 @@ public class Transaction2016 {
             String[] palavras = linha.split(";");
             if(!palavras[8].equals("quantity") && !palavras[8].equals("") && palavras[1].equals("2016")) {
                 if (palavras[0].equals("Brazil")){
-                    con.write(new Text(palavras[3]), new LongWritable(Long.parseLong(palavras[8])));
+                    con.write(new Text("1"), new LongWritable(Long.parseLong(palavras[8])));
                 }
             }
         }
