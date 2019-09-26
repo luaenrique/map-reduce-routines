@@ -31,7 +31,7 @@ public class TransactionNumberCount {
 
 
         // criacao do job e seu nome
-        Job j = new Job(c, "wordcount-professor");
+        Job j = new Job(c, "transaction-numbercount");
 
         /*
          *  Registro de classe
@@ -96,10 +96,13 @@ public class TransactionNumberCount {
 
             //quebrando em palavras
             String[] palavras = linha.split(";");
+
+            //verificando se a linha em questão é o cabeçalho do csv
             if(!palavras[8].equals("quantity") && !palavras[8].equals("") ) {
+                //verificando se o país é o Brasil
                 if (palavras[0].equals("Brazil")){
+                    //passando os resultados para o reduce agrupados por mercadoria
                     con.write(new Text(palavras[3]), new LongWritable(Long.parseLong(palavras[8])));
-                    System.out.println(palavras[8]);
                 }
             }
         }
@@ -121,6 +124,7 @@ public class TransactionNumberCount {
         // Funcao de reduce
         public void reduce(Text commodity, Iterable<LongWritable> values, Context con)
                 throws IOException, InterruptedException {
+
             int sum = 0;
 
             //para cada item da lista de valores é feita uma soma
@@ -129,8 +133,7 @@ public class TransactionNumberCount {
             }
 
 
-            //apresentar o resultado final através de emissao para um arquivo
-
+            //apresentar o resultado final de acordo com a commodity
             con.write(commodity, new LongWritable(sum));
         }
     }

@@ -8,7 +8,7 @@ import java.io.IOException;
 
 public class TransactionsPerCommodityWritable implements Writable {
     private String commodity;
-    private float    quantidade;
+    private float  quantidade;
 
 
     public TransactionsPerCommodityWritable(){}
@@ -43,7 +43,7 @@ public class TransactionsPerCommodityWritable implements Writable {
 
 
 
-    //reduce lê como do map? como o arquivo lê do reduce?
+    // read fields para que os campos sejam lidos pelo reduce.
     @Override
     public void readFields(DataInput in) throws IOException {
         this.commodity      = in.readUTF();
@@ -51,7 +51,7 @@ public class TransactionsPerCommodityWritable implements Writable {
     }
 
 
-    //dados estão saindo do map e indo pro reduce ou do reduce para o arquivo
+    //função de escrita.
     @Override
     public void write(DataOutput out) throws IOException {
         out.writeUTF(String.valueOf(commodity));

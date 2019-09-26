@@ -1,10 +1,8 @@
 package advanced.transacoes;
 
-import basic.WordCount;
+import advanced.transacoes.writables.EX8_KEY;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.FloatWritable;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -17,7 +15,7 @@ import org.apache.log4j.BasicConfigurator;
 
 import java.io.IOException;
 
-public class TransactionNumberPerYear {
+public class TransactionAmountFlowYear {
     public static void main(String[] args) throws Exception {
         BasicConfigurator.configure();
 
@@ -31,25 +29,30 @@ public class TransactionNumberPerYear {
 
 
         // criacao do job e seu nome
-        Job j = new Job(c, "transaction-number");
+        Job j = new Job(c, "transaction-amount-flow");
 
         /*
          *  Registro de classe
          *  Qual é a classe principal que está rodando o main?
          *  -j.setJarByClass(WordCount.class);
          * */
-        j.setJarByClass(TransactionNumberPerYear.class);
-        j.setMapperClass(TransactionNumberPerYear.MapForTransactionPerYear.class);
-        j.setReducerClass(TransactionNumberPerYear.ReduceForTransactionPerYear.class);
-        j.setCombinerClass(TransactionNumberPerYear.ReduceForTransactionPerYear.class);
+        j.setJarByClass(TransactionAmountFlowYear.class);
+        j.setMapperClass(TransactionAmountFlowYear.MapForTransactionAmountFlowYear.class);
+        j.setReducerClass(TransactionAmountFlowYear.ReduceForTransactionAmountFlowYear.class);
+        j.setCombinerClass(TransactionAmountFlowYear.CombineForTransactionAmountFlowYear.class);
 
 
         /*
          * definição dos tipos de saída
          *
          * */
-        j.setOutputKeyClass(LongWritable.class);
+        j.setOutputKeyClass(EX8_KEY.class);
         j.setOutputValueClass(LongWritable.class);
+
+
+
+        //definindo numero de reducers.
+        j.setNumReduceTasks(2);
 
 
 
@@ -74,7 +77,7 @@ public class TransactionNumberPerYear {
      *       se for arquivo de texto LongWritable e Text nunca mudam
      *
      * */
-    public static class MapForTransactionPerYear extends Mapper<LongWritable, Text, LongWritable, LongWritable> {
+    public static class MapForTransactionAmountFlowYear extends Mapper<LongWritable, Text, EX8_KEY, LongWritable> {
 
         // Funcao de map
         /*
@@ -90,10 +93,16 @@ public class TransactionNumberPerYear {
 
             //quebrando em palavras
             String[] palavras = linha.split(";");
-            //verificando se é a linha do cabeçalho
-            if(!palavras[1].equals("year") && !palavras[1].equals("")) {
-                //agrupando por ano e enviando o valor 1, visto que cada linha é uma transação.
-                con.write(new LongWritable(Long.parseLong(palavras[1])), new LongWritable(1));
+
+            //verificando se é o cabeçalho
+            if(!palavras[1].equals("year") && !palavras[1].equals("") && !palavras[4].equals("flow") && !palavras[4].equals("")) {
+                /*
+                *  Chave: composta - ano e fluxo
+                *
+                * */
+
+                //enviando pro combiner.
+                con.write(new EX8_KEY((palavras[1]), (palavras[4])), new LongWritable(1));
             }
         }
     }
@@ -111,23 +120,41 @@ public class TransactionNumberPerYear {
      *
      *
      * */
-    public static class ReduceForTransactionPerYear extends Reducer<LongWritable, LongWritable, LongWritable, LongWritable >{
+    public static class CombineForTransactionAmountFlowYear extends Reducer<EX8_KEY, LongWritable, EX8_KEY, LongWritable > {
 
         // Funcao de reduce
-        public void reduce(LongWritable year, Iterable<LongWritable> values, Context con)
+        public void reduce(EX8_KEY key, Iterable<LongWritable> values, Context con)
                 throws IOException, InterruptedException {
             int sum = 0;
 
-            //para cada ano somam-se as ocorrencias.
+            //para cada item da lista de valores é feita uma soma
             for(LongWritable v : values){
                 sum += v.get();
             }
 
 
-            //apresentando o resultado no arquivo.
-            con.write(year, new LongWritable(sum));
+            //enviando resultado pro reducer.
+
+            con.write(new EX8_KEY(key.getYear(), key.getFlow()), new LongWritable(sum));
         }
     }
 
+    public static class ReduceForTransactionAmountFlowYear extends Reducer<EX8_KEY, LongWritable, Text, LongWritable > {
 
+        // Funcao de reduce
+        public void reduce(EX8_KEY key, Iterable<LongWritable> values, Context con)
+                throws IOException, InterruptedException {
+            int sum = 0;
+
+            //para cada item da lista de valores é feita uma soma
+            for(LongWritable v : values){
+                sum += v.get();
+            }
+
+
+            //escrevendo no arquivo.
+
+            con.write(new Text(key.getYear()+" "+key.getFlow()), new LongWritable(sum));
+        }
+    }
 }
